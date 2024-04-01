@@ -1,26 +1,24 @@
 package main
 
-import (
-    "fmt"
-    "github.com/TechnicallyMay/conversions/linkedlist"
-)
+import "fmt"
 
 func main() {
-    list := linkedlist.LinkedListNode[string]{Value: "hello"}
-    list.Add("world")
-    list.Add("124")
-    list.Add("125")
-    list.Add("126")
-    list.Add("127")
-    list.Add("128")
-    list.Add("129")
+	list := &UnitNode{}
+	list.AddConversion(16, "cup", 1, "gallon")
+	list.AddConversion(4, "cup", 1, "quart")
+	list.AddConversion(2, "cup", 1, "pint")
 
-    list.Remove("128")
+    //TODO: Insert with one unit not being a 1
+	printUnitList(list)
+}
 
-    var curr *linkedlist.LinkedListNode[string] = &list
+func printUnitList(firstElementInList *UnitNode) {
+	var curr *UnitNode = firstElementInList
 
-    for curr != nil {
-        fmt.Println(curr.Value)
+	var i = 0
+	for curr != nil {
+		fmt.Printf("Unit at position %v is %v. ScaleToNext is %v\n", i, curr.Unit.name, curr.ScaleToNext)
         curr = curr.Next
-    }
+		i++
+	}
 }
