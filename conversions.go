@@ -1,27 +1,54 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 func main() {
-	list := &UnitNode{}
+    unitList := &UnitNode{}
 
-    list.AddConversion(10, "one", 1, "ten")
-    list.AddConversion(5, "two", 1, "ten")
-    list.AddConversion(8, "two", 2, "eight")
-    list.AddConversion(2, "ten", 1, "twenty")
+    for {
+        var firstQty, firstUnit, secondQty, secondUnit string
+        fmt.Println("Type your command in the format `<firstQuantity> <firstUnit> = <secondQuantity> <secondUnit>`")
+        fmt.Println("For example, to add a new conversion: `4 cup = 1 quart`")
+        fmt.Println("Or, to get a conversion: `10 cup = ? quart`")
+        fmt.Println()
+        fmt.Scanf("%s %s = %s %s",  &firstQty, &firstUnit, &secondQty, &secondUnit)
 
-    //TODO: Insert at beginning of list
-	printUnitList(list)
-}
+        //TODO: Break down commands
+        //TODO: Functionality to print whole list
+        if firstQty != "?" && secondQty != "?" {
+            firstQtyFloat, _ := strconv.ParseFloat(firstQty, 10)
+            secondQtyFloat, _ := strconv.ParseFloat(secondQty, 10)
 
-func printUnitList(firstElementInList *UnitNode) {
-	var curr *UnitNode = firstElementInList
+            unitList.AddConversion(float32(firstQtyFloat), firstUnit, float32(secondQtyFloat), secondUnit)
+            fmt.Printf("Added conversion, %v %v = %v %v\n\n", firstQtyFloat, firstUnit, secondQtyFloat, secondUnit)
+            continue
+        } 
 
-    fmt.Print("\n\nStarting final exam:\n\n")
-	var i = 0
-	for curr != nil {
-		fmt.Printf("\n[Final Exam] Unit at position %v is %v. ScaleToNext is %v", i, *curr.name, curr.ScaleToNext)
-        curr = curr.Next
-		i++
-	}
+        var qty float64
+        var fromName string
+        var toName string
+
+        if firstQty == "?" {
+            qty, _ = strconv.ParseFloat(secondQty, 10)
+            fromName = secondUnit
+            toName = firstUnit
+
+        } else {
+            qty, _ = strconv.ParseFloat(firstQty, 10)
+            fromName = firstUnit
+            toName = secondUnit
+        }
+
+        unit, err := unitList.GetConversion(float32(qty), fromName, toName)
+
+        if err != nil {
+            fmt.Println(err)
+            continue
+        }
+
+        fmt.Printf("%v %v = %v %v\n\n", qty, fromName, unit, toName)
+    }
 }
