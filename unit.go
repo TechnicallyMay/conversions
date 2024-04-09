@@ -55,7 +55,6 @@ func (n *UnitNode) AddConversion(fromQty float32, fromName string, toQty float32
     if existingLargerUnit != nil {
         logger.Debug(logPrefix + "Found larger unit in the list")
 
-        //TODO: This can be cleaner
         if smallestToLargerScale < smallerToLargerScale {
             // smallest belongs at beginning. Copy first node to second, then replace details of first with smaller
             newUnit := &UnitNode{name: n.name, Next: n.Next, ScaleToNext: n.ScaleToNext}
@@ -119,8 +118,10 @@ func (n *UnitNode) GetConversion(fromQty float32, fromName string, toName string
 
     foundUnit := *curr.name
     var toFind string
+    multiply := true
     if *curr.name == fromName {
         toFind = toName
+        multiply = false
     } else {
         toFind = fromName
     }
@@ -129,7 +130,6 @@ func (n *UnitNode) GetConversion(fromQty float32, fromName string, toName string
     // i.e. 1 teaspoon = ? gallon
     var conversionRate float32 = curr.ScaleToNext
     for *curr.Next.name != toFind {
-        fmt.Println("DEBUG")
         if curr.Next == nil {
             return 0, errors.New(fmt.Sprintf("Only one unit, %v,  was contained in the list", foundUnit))
         }
@@ -140,5 +140,9 @@ func (n *UnitNode) GetConversion(fromQty float32, fromName string, toName string
 
     fmt.Printf("\n\nconversionRate: %v, fromQty: %v\n\n", conversionRate, fromQty)
 
-    return conversionRate * fromQty, nil
+    if multiply {
+        return fromQty * conversionRate, nil
+    } else {
+        return fromQty / conversionRate , nil
+    }
 }

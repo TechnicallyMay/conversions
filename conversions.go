@@ -8,11 +8,12 @@ import (
 func main() {
     unitList := &UnitNode{}
 
+    fmt.Println("Type your command in the format `<firstQuantity> <firstUnit> = <secondQuantity> <secondUnit>`")
+    fmt.Println("For example, to add a new conversion: `4 cup = 1 quart`")
+    fmt.Println("Or, to get a conversion: `10 cup = ? quart`")
+
     for {
         var firstQty, firstUnit, secondQty, secondUnit string
-        fmt.Println("Type your command in the format `<firstQuantity> <firstUnit> = <secondQuantity> <secondUnit>`")
-        fmt.Println("For example, to add a new conversion: `4 cup = 1 quart`")
-        fmt.Println("Or, to get a conversion: `10 cup = ? quart`")
         fmt.Println()
         fmt.Scanf("%s %s = %s %s",  &firstQty, &firstUnit, &secondQty, &secondUnit)
 
