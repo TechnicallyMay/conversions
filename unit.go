@@ -54,6 +54,16 @@ func (n *UnitNode) AddConversion(fromQty float32, fromName string, toQty float32
 
     if existingLargerUnit != nil {
         logger.Debug(logPrefix + "Found larger unit in the list")
+
+        //TODO: This can be cleaner
+        if smallestToLargerScale < smallerToLargerScale {
+            // smallest belongs at beginning. Copy first node to second, then replace details of first with smaller
+            newUnit := &UnitNode{name: n.name, Next: n.Next, ScaleToNext: n.ScaleToNext}
+            n.ScaleToNext = smallerToLargerScale / smallestToLargerScale;
+            n.name = &smallerUnitName
+            n.Next = newUnit
+            return
+        }
     } else {
         logger.Debug(logPrefix + "Did not find larger unit in list")
     }
@@ -61,7 +71,6 @@ func (n *UnitNode) AddConversion(fromQty float32, fromName string, toQty float32
     existingSmallerUnit := n
     existingToLargerScale := smallestToLargerScale
     for *existingSmallerUnit.name != smallerUnitName {
-        //TODO: In here somewhere we ned to handle adding unit before beginning
         if existingSmallerUnit.Next == nil {
             existingSmallerUnit = nil
             break
