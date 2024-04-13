@@ -10,7 +10,7 @@ func TestAddShouldInsertUnitAfter(t *testing.T) {
 
     list.assertEquals(t, "Tablespoon", 16)
     list.Next.assertEquals(t, "cup", 16)
-    list.Next.Next.assertNameEquals(t, "gallon")
+    list.Next.Next.assertEquals(t, "gallon", 1)
 }
 
 func TestAddShouldInsertUnitAtBeginning(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAddShouldInsertUnitAtBeginning(t *testing.T) {
 
     list.assertEquals(t, "Tablespoon", 16)
     list.Next.assertEquals(t, "cup", 16)
-    list.Next.Next.assertNameEquals(t, "gallon")
+    list.Next.Next.assertEquals(t, "gallon", 1)
 }
 
 func TestAddShouldInsertToUnitBetween(t *testing.T) {
@@ -36,7 +36,7 @@ func TestAddShouldInsertToUnitBetween(t *testing.T) {
     list.assertEquals(t, "Tablespoon", 16)
     list.Next.assertEquals(t, "cup", 4)
     list.Next.Next.assertEquals(t, "quart", 4)
-    list.Next.Next.Next.assertNameEquals(t, "gallon")
+    list.Next.Next.Next.assertEquals(t, "gallon", 1)
 }
 
 func TestAddShouldInsertFromUnitBetween(t *testing.T) {
@@ -49,14 +49,16 @@ func TestAddShouldInsertFromUnitBetween(t *testing.T) {
     list.assertEquals(t, "teaspoon", 3)
     list.Next.assertEquals(t, "Tablespoon", 16)
     list.Next.Next.assertEquals(t, "cup", 4)
-    list.Next.Next.Next.assertNameEquals(t, "quart")
+    list.Next.Next.Next.assertEquals(t, "quart", 1)
 }
 //TODO: Equal units ( 1 = 1 )
 //TODO: Math (2 x = 3 y)
 //TODO: Conflicting conversions?
 
 func (node *UnitNode) assertEquals(t *testing.T, expectedName string, scaleToNext float32) {
-    node.assertNameEquals(t, expectedName)
+    if *node.name != expectedName {
+        t.Errorf("Expected unit name to be '%v', was '%v'", expectedName, *node.name)
+    }
 
     if node.ScaleToNext != scaleToNext {
         t.Errorf("Expected unit with name '%v' ScaleToNext to be '%v', was '%v'",
@@ -64,8 +66,3 @@ func (node *UnitNode) assertEquals(t *testing.T, expectedName string, scaleToNex
     }
 }
 
-func (node *UnitNode) assertNameEquals(t *testing.T, expectedName string) {
-    if *node.name != expectedName {
-        t.Errorf("Expected unit name to be '%v', was '%v'", expectedName, *node.name)
-    }
-}

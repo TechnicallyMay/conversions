@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math"
+    "golang.org/x/exp/slices"
 )
 
 type UnitNode struct {
@@ -16,133 +18,113 @@ func (n *UnitNode) AddConversion(fromQty float32, fromName string, toQty float32
     logPrefix := fmt.Sprintf("\n[From: %v, To: %v] ", fromName, toName)
     logger.Debug("\n" + logPrefix + "Entered AddConversion")
 
-    var largerUnitName, smallerUnitName string 
-    var largerUnitQty, smallerUnitQty float32
-
-    if fromQty >= toQty {
-        logger.Debug(logPrefix + "From unit is smaller than To unit")
-        smallerUnitName, largerUnitName = fromName, toName 
-        smallerUnitQty, largerUnitQty = fromQty, toQty 
-    } else {
-        logger.Debug(logPrefix + "To unit is smaller than From unit")
-        smallerUnitName, largerUnitName = toName, fromName  
-        smallerUnitQty, largerUnitQty = toQty, fromQty  
-    }
-
-    smallerToLargerScale := smallerUnitQty / largerUnitQty
-    if n.name == nil {
-        //TODO: Can probably remove this if block and just have the algo naturally handle this.
+    smallerQty, smallerName, largerQty, largerName := sortUnits(fromQty, fromName, toQty, toName)
+    smallerToLargerScale := smallerQty / largerQty
+    if n.Next == nil {
         logger.Debug(logPrefix + "DONE: First mapping in the list")
-        n.name = &smallerUnitName
+        n.name = &smallerName
         n.ScaleToNext = smallerToLargerScale
-        n.Next = &UnitNode{name: &largerUnitName}
+        n.Next = &UnitNode{name: &largerName, ScaleToNext: 1}
         return
     }
 
     logger.Debug(logPrefix + "Adding new conversion")
 
-    existingLargerUnit := n
-    var smallestToLargerScale float32 = 1
-    for *existingLargerUnit.name != largerUnitName {
-        if (existingLargerUnit.Next == nil) {
-            existingLargerUnit = nil
-            break
-        }
-        smallestToLargerScale *= existingLargerUnit.ScaleToNext
-        existingLargerUnit = existingLargerUnit.Next
+    //TODO don't try to pull both when happy path is only one existing
+    smallerUnit, _ := n.findFirstMatchingNodeByName(smallerName)
+    largerUnit, startToLargerScale := n.findFirstMatchingNodeByName(largerName)
+
+    if smallerUnit != nil && largerUnit != nil {
+        panic("Both units found in list, updates are not supported")
     }
 
-    if existingLargerUnit != nil {
-        logger.Debug(logPrefix + "Found larger unit in the list")
-
-        if smallestToLargerScale < smallerToLargerScale {
-            // smallest belongs at beginning. Copy first node to second, then replace details of first with smaller
-            newUnit := &UnitNode{name: n.name, Next: n.Next, ScaleToNext: n.ScaleToNext}
-            n.ScaleToNext = smallerToLargerScale / smallestToLargerScale;
-            n.name = &smallerUnitName
+    if largerUnit != nil {
+        logger.Debug(logPrefix + "Larger unit found in list, searching for smaller unit's position")
+        
+        if startToLargerScale < smallerToLargerScale {
+            logger.Debug(logPrefix + "DONE: Smaller unit belongs at beginning of the list.")
+            newUnit := &UnitNode{name: n.name, ScaleToNext: n.ScaleToNext, Next: n.Next}
+            n.name = &smallerName
+            n.ScaleToNext = smallerToLargerScale / startToLargerScale
             n.Next = newUnit
             return
         }
-    } else {
-        logger.Debug(logPrefix + "Did not find larger unit in list")
+        
+        targetScaleStartToSmaller := startToLargerScale / smallerToLargerScale
+        before, scaleStartToBefore := n.findNodeByTargetScale(targetScaleStartToSmaller)
+        logger.Debug(logPrefix + "DONE: Smaller unit belongs after %v, which has a scale from start of %v", *before.name, scaleStartToBefore)
+
+        newBeforeScaleToNext := targetScaleStartToSmaller / scaleStartToBefore
+        smallerUnit := &UnitNode{name: &smallerName, ScaleToNext: before.ScaleToNext / newBeforeScaleToNext, Next: before.Next} 
+        before.ScaleToNext = newBeforeScaleToNext
+        before.Next = smallerUnit
+        return
+    } 
+
+    if smallerUnit != nil {
+        logger.Debug(logPrefix + "Smaller unit found in list, searching for larger unit's position")
+
+        before, scaleSmallerToBefore := smallerUnit.findNodeByTargetScale(smallerToLargerScale)
+        logger.Debug(logPrefix + "DONE: Larger unit belongs after %v, which has a scale from smaller of %v", *before.name, scaleSmallerToBefore)
+        largerUnit := &UnitNode{name: &largerName, ScaleToNext: float32(math.Max(1, float64(before.ScaleToNext / smallerToLargerScale))), Next: before.Next} 
+        before.ScaleToNext = smallerToLargerScale / scaleSmallerToBefore
+        before.Next = largerUnit
+        return 
     }
     
-    existingSmallerUnit := n
-    existingToLargerScale := smallestToLargerScale
-    for *existingSmallerUnit.name != smallerUnitName {
-        if existingSmallerUnit.Next == nil {
-            existingSmallerUnit = nil
-            break
-        }
-
-        existingToSmallerScale := existingToLargerScale / smallerToLargerScale
-        existingToLargerScale /= existingSmallerUnit.ScaleToNext
-        if existingLargerUnit != nil && smallerToLargerScale > existingToLargerScale {
-            logger.Debug(logPrefix + "DONE: Larger unit is already in list, and found where smaller unit belongs")
-            smallerUnit := &UnitNode{name: &smallerUnitName, ScaleToNext: existingSmallerUnit.ScaleToNext / existingToSmallerScale, Next: existingSmallerUnit.Next} 
-            existingSmallerUnit.ScaleToNext = existingToSmallerScale
-            existingSmallerUnit.Next = smallerUnit
-            return
-        }
-
-        existingSmallerUnit = existingSmallerUnit.Next
-    }
-
-    if existingLargerUnit != nil && existingSmallerUnit != nil {
-        panic(logPrefix + "Found both units already in list, updates are not supported.")
-    }
-
-    next := existingSmallerUnit
-    nextToSmallerScale := smallerToLargerScale
-    for next.Next != nil && nextToSmallerScale > next.ScaleToNext {
-        smallerToLargerScale /= next.ScaleToNext
-        next = next.Next
-    }
-
-    logger.Debug(logPrefix + "DONE: Larger unit going after %v", *next.name)
-    newUnit := &UnitNode{name: &largerUnitName, ScaleToNext: existingToLargerScale / smallerToLargerScale, Next: next.Next}
-    next.Next = newUnit
-    next.ScaleToNext = nextToSmallerScale
+    panic("Neither unit found in list")
 }
 
 func (n *UnitNode) GetConversion(fromQty float32, fromName string, toName string) (float32, error) {
+    smallerUnit, scaleStartToSmaller := n.findFirstMatchingNodeByName(fromName, toName)
+    
+    if smallerUnit == nil {
+        return 0, errors.New("Neither unit was contained in list.")
+    }
+
+    largerUnit, scaleStartToLarger := smallerUnit.findFirstMatchingNodeByName(fromName, toName)
+
+    if largerUnit == nil {
+        return 0, errors.New("Both units were not contained in list.")
+    }
+    
+    proportion := scaleStartToLarger / scaleStartToSmaller
+    return fromQty * proportion, nil
+}
+
+func (n *UnitNode) findNodeByTargetScale(targetScale float32) (*UnitNode, float32) {
     curr := n
+    currScale := float32(1)
+    
+    for curr.Next != nil && currScale * curr.ScaleToNext < targetScale {
+        currScale *= curr.ScaleToNext
+        curr = curr.Next
+    }
+    
+    return curr, currScale
+}
 
-    for *curr.name != fromName && *curr.name != toName {
-        if curr.Next == nil {
-            return 0, errors.New("Neither unit was contained in the list")
+func (n *UnitNode) findFirstMatchingNodeByName(names ...string) (unit *UnitNode, scaleFromStart float32) {
+    curr := n
+    currScale := float32(1)
+    
+    for curr != nil {
+        if slices.Contains(names, *curr.name) {
+            return curr, currScale
         }
 
+        currScale *= curr.ScaleToNext
         curr = curr.Next
     }
 
-    foundUnit := *curr.name
-    var toFind string
-    multiply := true
-    if *curr.name == fromName {
-        toFind = toName
-        multiply = false
+    return nil, math.MaxFloat32
+}
+
+func sortUnits(fromQty float32, fromName string, toQty float32, toName string) (float32, string, float32, string) {
+    if fromQty >= toQty {
+        return fromQty, fromName, toQty, toName
     } else {
-        toFind = fromName
-    }
-
-    //TODO: Conversion when going from smaller -> larger unit
-    // i.e. 1 teaspoon = ? gallon
-    var conversionRate float32 = curr.ScaleToNext
-    for *curr.Next.name != toFind {
-        if curr.Next == nil {
-            return 0, errors.New(fmt.Sprintf("Only one unit, %v,  was contained in the list", foundUnit))
-        }
-
-        curr = curr.Next
-        conversionRate *= curr.ScaleToNext
-    }
-
-    fmt.Printf("\n\nconversionRate: %v, fromQty: %v\n\n", conversionRate, fromQty)
-
-    if multiply {
-        return fromQty * conversionRate, nil
-    } else {
-        return fromQty / conversionRate , nil
+        return toQty, toName, fromQty, fromName
     }
 }
+

@@ -9,13 +9,13 @@ type Logger struct {
 
 func (l *Logger) Debug(format string, args ...any) {
     if l.PrintDebug {
-        print(format, args)
+        l.print(format, args...)
     }
 }
 
 func (l *Logger) Info(format string, args ...any) {
     if l.PrintInfo {
-        print(format, args)
+        l.print(format, args...)
     }
 }
 
