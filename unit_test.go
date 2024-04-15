@@ -55,7 +55,7 @@ func TestAddShouldInsertFromUnitBetween(t *testing.T) {
 //TODO: Math (2 x = 3 y)
 //TODO: Conflicting conversions?
 
-func (node *UnitNode) assertEquals(t *testing.T, expectedName string, scaleToNext float32) {
+func (node *UnitNode) assertEquals(t *testing.T, expectedName string, scaleToNext float64) {
     if *node.name != expectedName {
         t.Errorf("Expected unit name to be '%v', was '%v'", expectedName, *node.name)
     }
