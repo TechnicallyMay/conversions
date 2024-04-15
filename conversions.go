@@ -1,35 +1,49 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"math"
-	"strconv"
+    "errors"
+    "fmt"
+    "math"
+    "strconv"
 )
 
 func main() {
     nodes := getDefaultConversions()
 
-    fmt.Println("Type your command in the format `<firstQuantity> <firstUnit> = <secondQuantity> <secondUnit>`")
-    fmt.Println("For example, to add a new conversion: `4 cup = 1 quart`")
-    fmt.Println("Or, to get a conversion: `10 cup = ? quart`")
-
     for {
+        fmt.Println("Type your command in the format `<firstQuantity> <firstUnit> = <secondQuantity> <secondUnit>`")
+        fmt.Println("For example, to add a new conversion: `4 cup = 1 quart`")
+        fmt.Println("Or, to get a conversion: `10 cup = ? quart`")
+
         var firstQty, firstUnit, secondQty, secondUnit string
         fmt.Println()
         fmt.Scanf("%s %s = %s %s",  &firstQty, &firstUnit, &secondQty, &secondUnit)
 
-        if firstQty == "" || firstUnit == "" || secondQty == "" || secondUnit == "" {
-            fmt.Println("Invalid input, please try again")
-            continue
-        }
-
-        //TODO: Break down commands
-        //TODO: Functionality to print whole list
-        if firstQty != "?" && secondQty != "?" {
+        if firstQty == "print" {
+            runPrintNodes(nodes)
+        } else if firstQty != "?" && secondQty != "?" {
             runGetConversion(nodes, firstQty, secondQty, firstUnit, secondUnit)
+        } else if firstQty == "" || firstUnit == "" || secondQty == "" || secondUnit == "" {
+            fmt.Println("Invalid input, please try again")
         } else {
             runAddConversion(nodes, firstQty, secondQty, firstUnit, secondUnit)
+        }
+
+        fmt.Println()
+        fmt.Println()
+    }
+}
+
+func runPrintNodes(nodes []*unitNode) {
+    for i, node := range nodes {
+        var curr *unitNode = node
+
+        fmt.Printf("\n\nPrinting list %v\n", i)
+        var j = 0
+        for curr != nil {
+            fmt.Printf("\n[List %v] Unit at position %v is %v. ScaleToNext is %v", i, j, *curr.name, curr.ScaleToNext)
+            curr = curr.Next
+            j++
         }
     }
 }
