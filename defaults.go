@@ -1,7 +1,22 @@
 package main
 
-func (n *UnitNode) addDefaultConversions() {
-    n.AddConversion(16, "Tablespoon", 1, "cup")
-    n.AddConversion(4, "cup", 1, "quart")
-    n.AddConversion(4, "quart", 1, "gallon")
+func getDefaultConversions() []*unitNode {
+    volumetric := NewList(16, "tablespoon", 1, "cup")
+    volumetric.AddConversion(4, "cup", 1, "quart")
+    volumetric.AddConversion(4, "quart", 1, "gallon")
+
+    length := NewList(12, "inch", 1, "foot")
+    length.AddConversion(5280, "foot", 1, "mile")
+    length.AddConversion(1.609, "kilometer", 1, "mile")
+    length.AddConversion(9_460_730_472_580.8, "kilometer", 1, "lightyear")
+    length.AddConversion(149_597_870_700, "meter", 1, "au")
+    length.AddConversion(1000, "meter", 1, "kilometer")
+
+    weight := NewList(16, "ounce", 1, "pound")
+    weight.AddConversion(28.35, "gram", 1, "ounce")
+    weight.AddConversion(2000, "pound", 1, "ton")
+    weight.AddConversion(4, "quart", 1, "gallon")
+
+    return []*unitNode{volumetric, length, weight}
 }
+

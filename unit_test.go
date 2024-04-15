@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestAddShouldInsertUnitAfter(t *testing.T) {
-    list := &UnitNode{}
+    list := &unitNode{}
 
     list.AddConversion(16, "Tablespoon", 1, "cup")
     list.AddConversion(16, "cup", 1, "gallon")
@@ -14,7 +14,7 @@ func TestAddShouldInsertUnitAfter(t *testing.T) {
 }
 
 func TestAddShouldInsertUnitAtBeginning(t *testing.T) {
-    list := &UnitNode{}
+    list := &unitNode{}
 
     list.AddConversion(16, "cup", 1, "gallon")
     // Even though tablespoon is added second, it should become the first element in the list.
@@ -26,7 +26,7 @@ func TestAddShouldInsertUnitAtBeginning(t *testing.T) {
 }
 
 func TestAddShouldInsertToUnitBetween(t *testing.T) {
-    list := &UnitNode{}
+    list := &unitNode{}
 
     list.AddConversion(16, "Tablespoon", 1, "cup")
     list.AddConversion(16, "cup", 1, "gallon")
@@ -40,7 +40,7 @@ func TestAddShouldInsertToUnitBetween(t *testing.T) {
 }
 
 func TestAddShouldInsertFromUnitBetween(t *testing.T) {
-    list := &UnitNode{}
+    list := &unitNode{}
     list.AddConversion(48, "teaspoon", 1, "cup")
     list.AddConversion(4, "cup", 1, "quart")
     // Even though it's added last, Tablespoon should go between teaspoon and cup
@@ -55,7 +55,7 @@ func TestAddShouldInsertFromUnitBetween(t *testing.T) {
 //TODO: Math (2 x = 3 y)
 //TODO: Conflicting conversions?
 
-func (node *UnitNode) assertEquals(t *testing.T, expectedName string, scaleToNext float64) {
+func (node *unitNode) assertEquals(t *testing.T, expectedName string, scaleToNext float64) {
     if *node.name != expectedName {
         t.Errorf("Expected unit name to be '%v', was '%v'", expectedName, *node.name)
     }

@@ -7,26 +7,26 @@ import (
     "math"
 )
 
-type UnitNode struct {
+type unitNode struct {
     name *string
-    Next *UnitNode
+    Next *unitNode
     ScaleToNext float64
 }
 
-func (n *UnitNode) AddConversion(fromQty float64, fromName string, toQty float64, toName string) (*UnitNode, error) {
+func NewList(fromQty float64, fromName string, toQty float64, toName string) *unitNode {
+    smallerQty, smallerName, largerQty, largerName := sortUnits(fromQty, fromName, toQty, toName)
+    smallerToLargerScale := smallerQty / largerQty
+
+    return &unitNode{name: &smallerName, ScaleToNext: smallerToLargerScale, Next: &unitNode{name: &largerName, ScaleToNext: 1}}
+}
+
+func (n *unitNode) AddConversion(fromQty float64, fromName string, toQty float64, toName string) (bool, error) {
     logger := Logger{}
     logPrefix := fmt.Sprintf("\n[From: %v, To: %v] ", fromName, toName)
     logger.Debug("\n" + logPrefix + "Entered AddConversion")
 
     smallerQty, smallerName, largerQty, largerName := sortUnits(fromQty, fromName, toQty, toName)
     smallerToLargerScale := smallerQty / largerQty
-    if n.Next == nil {
-        logger.Debug(logPrefix + "DONE: First mapping in the list")
-        n.name = &smallerName
-        n.ScaleToNext = smallerToLargerScale
-        n.Next = &UnitNode{name: &largerName, ScaleToNext: 1}
-        return n, nil
-    }
 
     logger.Debug(logPrefix + "Adding new conversion")
 
@@ -35,7 +35,7 @@ func (n *UnitNode) AddConversion(fromQty float64, fromName string, toQty float64
     largerUnit, startToLargerScale := n.findFirstMatchingNodeByName(largerName)
 
     if smallerUnit != nil && largerUnit != nil {
-        return nil, errors.New("Both units found in list, updates are not supported")
+        return false, errors.New("Both units found in list, updates are not supported")
     }
 
     if smallerUnit != nil {
@@ -46,29 +46,29 @@ func (n *UnitNode) AddConversion(fromQty float64, fromName string, toQty float64
     if largerUnit != nil {
         if startToLargerScale < smallerToLargerScale {
             logger.Debug(logPrefix + "DONE: Smaller unit belongs at beginning of the list.")
-            newUnit := &UnitNode{name: n.name, ScaleToNext: n.ScaleToNext, Next: n.Next}
+            newUnit := &unitNode{name: n.name, ScaleToNext: n.ScaleToNext, Next: n.Next}
             n.name = &smallerName
             n.ScaleToNext = smallerToLargerScale / startToLargerScale
             n.Next = newUnit
-            return n, nil
+            return true, nil
         }
 
         logger.Debug(logPrefix + "DONE: Larger unit found in list, adding smaller unit at target scale.")
         return n.insertUnitAtTargetScale(smallerName, startToLargerScale / smallerToLargerScale), nil
     }
 
-    return nil, errors.New("Neither unit found in list")
+    return false, nil
 }
 
-func (n *UnitNode) GetConversion(fromQty float64, fromName string, toName string) (float64, error) {
+func (n *unitNode) GetConversion(fromQty float64, fromName string, toName string) (float64, error) {
     smallerUnit, _ := n.findFirstMatchingNodeByName(fromName, toName)
 
     if smallerUnit == nil {
-        return 0, errors.New("Neither unit was contained in list.")
+        return math.Inf(-1), nil
     }
 
     var conversion, scaleSmallerToLarger float64
-    var largerUnit *UnitNode
+    var largerUnit *unitNode
 
     if *smallerUnit.name == fromName {
         largerUnit, scaleSmallerToLarger = smallerUnit.findFirstMatchingNodeByName(toName)
@@ -85,7 +85,7 @@ func (n *UnitNode) GetConversion(fromQty float64, fromName string, toName string
     return conversion, nil
 }
 
-func (n *UnitNode) insertUnitAtTargetScale(newUnitName string, targetScale float64) *UnitNode {
+func (n *unitNode) insertUnitAtTargetScale(newUnitName string, targetScale float64) bool {
     curr := n
     currScale := float64(1)
 
@@ -96,14 +96,14 @@ func (n *UnitNode) insertUnitAtTargetScale(newUnitName string, targetScale float
 
     proportion := targetScale / currScale
     newScaleToNext := math.Max(1, n.ScaleToNext / proportion)
-    newUnit := &UnitNode{name: &newUnitName, ScaleToNext: newScaleToNext, Next: n.Next}
+    newUnit := &unitNode{name: &newUnitName, ScaleToNext: newScaleToNext, Next: n.Next}
     n.ScaleToNext = proportion
     n.Next = newUnit
 
-    return newUnit
+    return true
 }
 
-func (n *UnitNode) findFirstMatchingNodeByName(names ...string) (unit *UnitNode, scaleFromStart float64) {
+func (n *unitNode) findFirstMatchingNodeByName(names ...string) (unit *unitNode, scaleFromStart float64) {
     curr := n
     currScale := float64(1)
 
