@@ -27,47 +27,54 @@ func main() {
         //TODO: Break down commands
         //TODO: Functionality to print whole list
         if firstQty != "?" && secondQty != "?" {
-            firstQtyFloat, _ := strconv.ParseFloat(firstQty, 10)
-            secondQtyFloat, _ := strconv.ParseFloat(secondQty, 10)
-
-            var error error
-            nodes, error = addConversion(nodes, firstQtyFloat, firstUnit, secondQtyFloat, secondUnit)
-            if error != nil {
-                fmt.Printf("There was an error adding the conversion: %v\n", error)
-            } else {
-                fmt.Printf("Added conversion, %v %v = %v %v\n\n", firstQtyFloat, firstUnit, secondQtyFloat, secondUnit)
-            }
-            continue
-        }
-
-        var qty float64
-        var fromName, toName string
-        var parseError error
-
-        if firstQty == "?" {
-            qty, parseError = strconv.ParseFloat(secondQty, 10)
-            fromName = secondUnit
-            toName = firstUnit
+            runGetConversion(nodes, firstQty, secondQty, firstUnit, secondUnit)
         } else {
-            qty, parseError = strconv.ParseFloat(firstQty, 10)
-            fromName = firstUnit
-            toName = secondUnit
+            runAddConversion(nodes, firstQty, secondQty, firstUnit, secondUnit)
         }
-
-        if parseError != nil {
-            fmt.Printf("There was an error parsing your input: %v", parseError)
-            continue
-        }
-
-        toQty, err := getConversion(nodes, qty, fromName, toName)
-
-        if err != nil {
-            fmt.Printf("There was an error getting the conversion: %v\n", err)
-            continue
-        }
-
-        fmt.Printf("%v %v = %v %v\n\n", qty, fromName, toQty, toName)
     }
+}
+
+func runGetConversion(nodes []*unitNode, firstQty string, secondQty string, firstUnit string, secondUnit string) {
+    firstQtyFloat, _ := strconv.ParseFloat(firstQty, 10)
+    secondQtyFloat, _ := strconv.ParseFloat(secondQty, 10)
+
+    var error error
+    nodes, error = addConversion(nodes, firstQtyFloat, firstUnit, secondQtyFloat, secondUnit)
+    if error != nil {
+        fmt.Printf("There was an error adding the conversion: %v\n", error)
+    } else {
+        fmt.Printf("Added conversion, %v %v = %v %v\n\n", firstQtyFloat, firstUnit, secondQtyFloat, secondUnit)
+    }
+}
+
+func runAddConversion(nodes []*unitNode, firstQty string, secondQty string, firstUnit string, secondUnit string) {
+    var qty float64
+    var fromName, toName string
+    var parseError error
+
+    if firstQty == "?" {
+        qty, parseError = strconv.ParseFloat(secondQty, 10)
+        fromName = secondUnit
+        toName = firstUnit
+    } else {
+        qty, parseError = strconv.ParseFloat(firstQty, 10)
+        fromName = firstUnit
+        toName = secondUnit
+    }
+
+    if parseError != nil {
+        fmt.Printf("There was an error parsing your input: %v", parseError)
+        return
+    }
+
+    toQty, err := getConversion(nodes, qty, fromName, toName)
+
+    if err != nil {
+        fmt.Printf("There was an error getting the conversion: %v\n", err)
+        return
+    }
+
+    fmt.Printf("%v %v = %v %v\n\n", qty, fromName, toQty, toName)
 }
 
 func getConversion(nodes []*unitNode, qty float64, fromName string, toName string) (float64, error) {
